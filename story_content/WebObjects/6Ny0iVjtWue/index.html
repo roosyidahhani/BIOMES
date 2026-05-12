@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Aktivitas Kelompok</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)), 
+                              url('https://lh3.googleusercontent.com/d/1U7CdAFrCQlzGZLS6ZeBjQWH_QwbQDsqU');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 24px;
+            box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .nav-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .active-tab {
+            background-color: #3b82f6;
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- RUANG UNTUK JUDUL (DIBERIKAN JARAK ATAS) -->
+        <div class="pt-16 pb-10 text-center">
+            <!-- Tempat Anda menambahkan Judul secara manual -->
+        </div>
+
+        <!-- Navigation Switcher -->
+        <div class="flex justify-center mb-10">
+            <div class="bg-white/60 p-1 rounded-full flex gap-2 backdrop-blur-md border border-white/50 shadow-sm">
+                <button id="btnSiswa" onclick="switchView('siswa')" class="nav-btn px-10 py-2.5 rounded-full font-bold active-tab">
+                    Siswa
+                </button>
+                <button id="btnGuru" onclick="switchView('guru')" class="nav-btn px-10 py-2.5 rounded-full font-bold text-gray-600 hover:bg-white/80">
+                    Guru
+                </button>
+            </div>
+        </div>
+
+        <!-- AREA SISWA -->
+        <div id="viewSiswa" class="space-y-6">
+            <div class="glass-card p-8">
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-blue-600 font-bold text-lg mb-2">Nama Kelompok</label>
+                        <input type="text" id="inputNama" class="w-full p-4 border-2 border-blue-100 rounded-xl outline-none focus:border-blue-400 transition-all" placeholder="Contoh: Kelompok Bimasakti">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-blue-600 font-bold text-lg mb-2">Aktivitas</label>
+                        <p class="text-gray-500 text-sm mb-2 italic">Apa yang sudah dikerjakan?</p>
+                        <textarea id="inputAktivitas" class="w-full p-4 border-2 border-blue-100 rounded-xl outline-none focus:border-blue-400 transition-all" rows="4" placeholder="Tuliskan progres pekerjaan kelompok..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-red-500 font-bold text-lg mb-2">Kendala</label>
+                        <p class="text-gray-500 text-sm mb-2 italic">Adakah masalah yang dihadapi?</p>
+                        <textarea id="inputKendala" class="w-full p-4 border-2 border-red-100 rounded-xl outline-none focus:border-red-400 transition-all" rows="4" placeholder="Tuliskan masalah jika ada..."></textarea>
+                    </div>
+
+                    <button id="btnSimpan" onclick="kirimLaporan()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2">
+                        <span>Kirim Laporan</span>
+                    </button>
+                    <p id="saveStatus" class="text-center font-semibold mt-4 hidden"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- AREA GURU -->
+        <div id="viewGuru" class="hidden space-y-6">
+            <div class="glass-card p-8 min-h-[400px]">
+                <div class="mb-8 border-b border-gray-100 pb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">Daftar Laporan Masuk</h2>
+                </div>
+                
+                <div id="displayArea" class="grid gap-6">
+                    <!-- Data Laporan Akan Muncul di Sini -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data lokal menggunakan LocalStorage
+        let localData = JSON.parse(localStorage.getItem('laporan_data_v2')) || [];
+
+        function kirimLaporan() {
+            const nama = document.getElementById('inputNama').value.trim();
+            const aktivitas = document.getElementById('inputAktivitas').value.trim();
+            const kendala = document.getElementById('inputKendala').value.trim();
+
+            if (!nama || !aktivitas) {
+                showStatus("Nama kelompok dan aktivitas wajib diisi!", "text-red-500");
+                return;
+            }
+
+            const newReport = {
+                id: Date.now(),
+                nama,
+                aktivitas,
+                kendala: kendala || "-",
+                feedback: ""
+                // Timestamp dihapus sesuai instruksi
+            };
+
+            localData.unshift(newReport);
+            localStorage.setItem('laporan_data_v2', JSON.stringify(localData));
+
+            showStatus("Laporan terkirim!", "text-green-600");
+            
+            document.getElementById('inputNama').value = "";
+            document.getElementById('inputAktivitas').value = "";
+            document.getElementById('inputKendala').value = "";
+        }
+
+        window.hapusLaporan = function(id) {
+            localData = localData.filter(item => item.id !== id);
+            localStorage.setItem('laporan_data_v2', JSON.stringify(localData));
+            updateTeacherUI();
+        };
+
+        window.simpanFeedback = function(id) {
+            const fbText = document.getElementById(`fb-${id}`).value;
+            const item = localData.find(i => i.id === id);
+            if(item) {
+                item.feedback = fbText;
+                localStorage.setItem('laporan_data_v2', JSON.stringify(localData));
+                const btn = document.getElementById(`btn-fb-${id}`);
+                btn.innerText = "Tersimpan!";
+                btn.classList.replace('bg-green-500', 'bg-green-700');
+                setTimeout(() => {
+                    btn.innerText = "Simpan Umpan Balik";
+                    btn.classList.replace('bg-green-700', 'bg-green-500');
+                }, 2000);
+            }
+        };
+
+        function updateTeacherUI() {
+            const displayArea = document.getElementById('displayArea');
+            if (localData.length === 0) {
+                displayArea.innerHTML = `<div class="text-center py-20 text-gray-400 italic">Belum ada laporan masuk.</div>`;
+                return;
+            }
+
+            displayArea.innerHTML = localData.map(report => `
+                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative group animate-fade-in">
+                    <!-- Tombol Delete -->
+                    <button onclick="hapusLaporan(${report.id})" class="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition-colors p-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+
+                    <div class="mb-4">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-blue-500 bg-blue-50 px-2 py-0.5 rounded">Kelompok</span>
+                        <h3 class="text-xl font-bold text-gray-800">${escapeHtml(report.nama)}</h3>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-4 mb-6">
+                        <div class="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                            <span class="text-xs font-bold text-blue-600 block mb-1 uppercase">Aktivitas</span>
+                            <p class="text-gray-700 text-sm whitespace-pre-line">${escapeHtml(report.aktivitas)}</p>
+                        </div>
+                        <div class="p-4 bg-red-50/50 rounded-xl border border-red-100">
+                            <span class="text-xs font-bold text-red-600 block mb-1 uppercase">Kendala</span>
+                            <p class="text-gray-700 text-sm whitespace-pre-line">${escapeHtml(report.kendala)}</p>
+                        </div>
+                    </div>
+
+                    <!-- Bagian Umpan Balik -->
+                    <div class="mt-4 pt-4 border-t border-dashed border-gray-200">
+                        <label class="block text-xs font-bold text-green-600 mb-2 uppercase">Umpan Balik Guru</label>
+                        <div class="flex flex-col gap-2">
+                            <textarea id="fb-${report.id}" 
+                                class="w-full p-3 text-sm bg-green-50/30 border border-green-100 rounded-lg outline-none focus:border-green-300 transition-all" 
+                                rows="2" placeholder="Tulis masukan untuk kelompok ini...">${report.feedback || ""}</textarea>
+                            <button id="btn-fb-${report.id}" onclick="simpanFeedback(${report.id})" 
+                                class="self-end bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-2 px-6 rounded-lg transition-all shadow-sm active:scale-95">
+                                Simpan Umpan Balik
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showStatus(msg, colorClass) {
+            const status = document.getElementById('saveStatus');
+            status.innerText = msg;
+            status.className = `text-center font-semibold mt-4 ${colorClass}`;
+            status.classList.remove('hidden');
+            setTimeout(() => status.classList.add('hidden'), 5000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || "";
+            return div.innerHTML;
+        }
+
+        window.switchView = function(view) {
+            const btnSiswa = document.getElementById('btnSiswa');
+            const btnGuru = document.getElementById('btnGuru');
+            const viewSiswa = document.getElementById('viewSiswa');
+            const viewGuru = document.getElementById('viewGuru');
+
+            if (view === 'siswa') {
+                viewSiswa.classList.remove('hidden');
+                viewGuru.classList.add('hidden');
+                btnSiswa.classList.add('active-tab');
+                btnGuru.classList.remove('active-tab');
+            } else {
+                viewSiswa.classList.add('hidden');
+                viewGuru.classList.remove('hidden');
+                btnGuru.classList.add('active-tab');
+                btnSiswa.classList.remove('active-tab');
+                updateTeacherUI();
+            }
+        };
+
+        updateTeacherUI();
+    </script>
+</body>
+</html>
